@@ -75,4 +75,8 @@ public class Account {
         account.setCreatedAt(new Date());
         return account;
     }
+
+    public boolean hasSufficientBalance(double amount) {
+        return this.balance >= amount;
+    }
 }
