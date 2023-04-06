@@ -3,6 +3,7 @@ package com.example.transfermoney.service.impl;
 import com.example.transfermoney.exceptions.AccountException;
 import com.example.transfermoney.exceptions.TransactionException;
 import com.example.transfermoney.model.Account;
+import com.example.transfermoney.model.CurrencyEnum;
 import com.example.transfermoney.model.MessageEnum;
 import com.example.transfermoney.model.Transaction;
 import com.example.transfermoney.model.dtos.TransactionRequest;
@@ -16,6 +17,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Objects;
 
 /**
  * @author George Lykoudis
@@ -34,6 +37,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public Transaction save(Transaction transaction) {
+        log.info("saving transaction {}", transaction);
         return transactionRepository.save(transaction);
     }
 
@@ -42,9 +46,11 @@ public class TransactionServiceImpl implements TransactionService {
     public ResponseEntity<TransactionResponse> execute(TransactionRequest transactionRequest) {
         try {
             Account source = accountService.findById(transactionRequest.getSourceAccountId());
+            isValidAccount(source);
             Account target = accountService.findById(transactionRequest.getTargetAccountId());
+            isValidAccount(target);
             validateTransaction(source, target, transactionRequest);
-            log.info("Fetched and validated accounts");
+            log.debug("Fetched and validated accounts");
             executeTransaction(source, target, transactionRequest);
         } catch (AccountException | TransactionException e) {
             return createTransactionResponseWithError(e);
@@ -57,8 +63,12 @@ public class TransactionServiceImpl implements TransactionService {
         target.setBalance(target.getBalance() + transactionRequest.getAmount());
         accountService.save(source);
         accountService.save(target);
-        Transaction transaction = Transaction
-                .createTransaction(source, target, transactionRequest.getAmount(), transactionRequest.getCurrency());
+        Transaction transaction = Transaction.builder()
+                .sourceAccount(source)
+                .targetAccount(target)
+                .amount(transactionRequest.getAmount())
+                .currency(CurrencyEnum.getCurrencyFromString(transactionRequest.getCurrency()))
+                .build();
         save(transaction);
     }
 
@@ -68,6 +78,13 @@ public class TransactionServiceImpl implements TransactionService {
         validateSourceNotSameWithTarget(sourceAccount, targetAccount);
         validateCurrency(sourceAccount, transactionRequest);
         validateSourcesAccountBalanceSufficient(sourceAccount, transactionRequest);
+    }
+
+    private void isValidAccount(Account account) {
+        if (Objects.isNull(account)) {
+            log.error(MessageEnum.ACCOUNT_NOT_FOUND.getMessage());
+            throw new TransactionException(MessageEnum.ACCOUNT_NOT_FOUND.getMessage());
+        }
     }
 
     private void validateSourceNotSameWithTarget(Account source, Account target) {
