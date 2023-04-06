@@ -84,6 +84,7 @@ public class TransactionServiceImpl implements TransactionService {
                                      TransactionRequest transactionRequest) throws TransactionException {
         validateSourceNotSameWithTarget(sourceAccount, targetAccount);
         validateCurrency(sourceAccount, transactionRequest);
+        validateCurrency(targetAccount, transactionRequest);
         validateSourcesAccountBalanceSufficient(sourceAccount, transactionRequest);
     }
 
@@ -101,13 +102,13 @@ public class TransactionServiceImpl implements TransactionService {
         }
     }
 
-    private void validateCurrency(Account source, TransactionRequest request) throws TransactionException {
+    private void validateCurrency(Account account, TransactionRequest request) throws TransactionException {
         if (!request.hasValidCurrency()) {
             log.error(MessageEnum.CURRENCY_NOT_SPECIFIED.getMessage());
             throw new TransactionException(MessageEnum.CURRENCY_NOT_SPECIFIED.getMessage());
         }
         // transaction in different currency
-        if (!source.getCurrency().getName().equals(request.getCurrency())) {
+        if (!account.getCurrency().getName().equals(request.getCurrency())) {
             log.error(MessageEnum.DIFFERENT_CURRENCY_FROM_ACCOUNT.getMessage());
             // could calculate the balance with transaction's currency and proceed with the flow
             throw new TransactionException(MessageEnum.DIFFERENT_CURRENCY_FROM_ACCOUNT.getMessage());
