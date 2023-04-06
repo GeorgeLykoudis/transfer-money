@@ -43,7 +43,8 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
-    public ResponseEntity<TransactionResponse> execute(TransactionRequest transactionRequest) {
+    public TransactionResponse execute(TransactionRequest transactionRequest) {
+        Transaction transaction = null;
         try {
             Account source = accountService.findById(transactionRequest.getSourceAccountId());
             isValidAccount(source);
@@ -51,14 +52,20 @@ public class TransactionServiceImpl implements TransactionService {
             isValidAccount(target);
             validateTransaction(source, target, transactionRequest);
             log.debug("Fetched and validated accounts");
-            executeTransaction(source, target, transactionRequest);
+            transaction = executeTransaction(source, target, transactionRequest);
+            if (Objects.isNull(transaction)) {
+                return TransactionResponse.builder().message(MessageEnum.FAILED_TRANSACTION.getMessage()).build();
+            }
         } catch (AccountException | TransactionException e) {
-            return createTransactionResponseWithError(e);
+            return TransactionResponse.builder().message(e.getMessage()).build();
         }
-        return createSuccessTransactionResponse();
+        return TransactionResponse.builder()
+                .message(MessageEnum.TRANSACTION_COMPLETED.getMessage())
+                .transactionId(transaction.getId())
+                .build();
     }
 
-    private void executeTransaction(Account source, Account target, TransactionRequest transactionRequest) {
+    private Transaction executeTransaction(Account source, Account target, TransactionRequest transactionRequest) {
         source.setBalance(source.getBalance() - transactionRequest.getAmount());
         target.setBalance(target.getBalance() + transactionRequest.getAmount());
         accountService.save(source);
@@ -69,7 +76,7 @@ public class TransactionServiceImpl implements TransactionService {
                 .amount(transactionRequest.getAmount())
                 .currency(CurrencyEnum.getCurrencyFromString(transactionRequest.getCurrency()))
                 .build();
-        save(transaction);
+        return save(transaction);
     }
 
     private void validateTransaction(Account sourceAccount,
@@ -117,12 +124,12 @@ public class TransactionServiceImpl implements TransactionService {
         }
     }
 
-    private ResponseEntity<TransactionResponse> createSuccessTransactionResponse() {
-        return ResponseEntity.ok().build();
-    }
-
-    private ResponseEntity<TransactionResponse> createTransactionResponseWithError(Exception e) {
-        TransactionResponse transactionResponse = new TransactionResponse(e.getMessage());
-        return new ResponseEntity<>(transactionResponse, HttpStatus.BAD_REQUEST);
-    }
+//    private ResponseEntity<TransactionResponse> createSuccessTransactionResponse() {
+//        return ResponseEntity.ok().build();
+//    }
+//
+//    private ResponseEntity<TransactionResponse> createTransactionResponseWithError(Exception e) {
+//        TransactionResponse transactionResponse = new TransactionResponse(e.getMessage());
+//        return new ResponseEntity<>(transactionResponse, HttpStatus.BAD_REQUEST);
+//    }
 }

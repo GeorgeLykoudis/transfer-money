@@ -11,5 +11,5 @@ import org.springframework.http.ResponseEntity;
  */
 public interface TransactionService {
     Transaction save(Transaction transaction);
-    ResponseEntity<TransactionResponse> execute(TransactionRequest transactionRequest);
+    TransactionResponse execute(TransactionRequest transactionRequest);
 }
