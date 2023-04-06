@@ -1,7 +1,10 @@
 package com.example.transfermoney.model;
 
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
@@ -23,6 +26,9 @@ import javax.persistence.Table;
 @Getter
 @Setter
 @ToString
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity
 @Table(name = "transactions")
 public class Transaction {
@@ -47,8 +53,6 @@ public class Transaction {
     @Enumerated(EnumType.STRING)
     private CurrencyEnum currency;
 
-    private Transaction() {}
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -58,12 +62,8 @@ public class Transaction {
         return getId() != null ? getId().equals(that.getId()) : that.getId() == null;
     }
 
-    public static Transaction createTransaction(Account source, Account target, double amount, String currency) {
-        Transaction transaction = new Transaction();
-        transaction.setAmount(amount);
-        transaction.setCurrency(CurrencyEnum.getCurrencyFromString(currency));
-        transaction.setSourceAccount(source);
-        transaction.setTargetAccount(target);
-        return transaction;
+    @Override
+    public int hashCode() {
+        return id.hashCode();
     }
 }

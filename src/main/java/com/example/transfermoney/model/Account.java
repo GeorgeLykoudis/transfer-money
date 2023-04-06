@@ -1,7 +1,10 @@
 package com.example.transfermoney.model;
 
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 import org.springframework.data.annotation.CreatedDate;
@@ -23,6 +26,9 @@ import java.util.Date;
 @Getter
 @Setter
 @ToString
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity
 @Table(name = "accounts")
 public class Account {
@@ -49,8 +55,6 @@ public class Account {
 //    @OneToMany(mappedBy = "targetAccount", fetch = FetchType.LAZY)
 //    private Set<Transaction> transactionsAsTarget = new HashSet<>();
 
-    private Account() {}
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -60,20 +64,9 @@ public class Account {
         return getId() != null ? getId().equals(account.getId()) : account.getId() == null;
     }
 
-    public static Account createAccount(double balance, String currency) {
-        Account account = new Account();
-        account.setBalance(balance);
-        account.setCurrency(CurrencyEnum.getCurrencyFromString(currency)); // could add checks for currencies existence
-        account.setCreatedAt(new Date());
-        return account;
-    }
-
-    public static Account createAccount(double balance, CurrencyEnum currency) {
-        Account account = new Account();
-        account.setBalance(balance);
-        account.setCurrency(currency); // could add checks for currencies existence
-        account.setCreatedAt(new Date());
-        return account;
+    @Override
+    public int hashCode() {
+        return id.hashCode();
     }
 
     public boolean hasSufficientBalance(double amount) {
