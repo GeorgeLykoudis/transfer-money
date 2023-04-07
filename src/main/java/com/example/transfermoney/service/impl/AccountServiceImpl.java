@@ -2,7 +2,7 @@ package com.example.transfermoney.service.impl;
 
 import com.example.transfermoney.exceptions.AccountException;
 import com.example.transfermoney.model.Account;
-import com.example.transfermoney.model.MessageEnum;
+import com.example.transfermoney.model.TransactionEnum;
 import com.example.transfermoney.repository.AccountRepository;
 import com.example.transfermoney.service.AccountService;
 import lombok.extern.slf4j.Slf4j;
@@ -24,10 +24,10 @@ public class AccountServiceImpl implements AccountService {
     @Override
     public Account findById(long accountId) {
         return accountRepository.findById(accountId).orElseThrow(() -> {
-            String NOT_FOUND = MessageEnum
-                    .replacePlaceHolder(MessageEnum.ACCOUNT_NOT_FOUND, String.valueOf(accountId));
+            String NOT_FOUND = TransactionEnum
+                    .replacePlaceHolder(TransactionEnum.ACCOUNT_NOT_FOUND, String.valueOf(accountId));
             log.error(NOT_FOUND);
-            return new AccountException(NOT_FOUND);
+            return new AccountException(NOT_FOUND, TransactionEnum.ACCOUNT_NOT_FOUND.getCode());
         });
     }
 

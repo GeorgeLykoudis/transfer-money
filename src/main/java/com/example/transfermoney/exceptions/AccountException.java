@@ -6,7 +6,10 @@ package com.example.transfermoney.exceptions;
  */
 public class AccountException extends RuntimeException {
 
-    public AccountException(String message) {
+    private String code;
+
+    public AccountException(String message, String code) {
         super(message);
+        this.code = code;
     }
 }

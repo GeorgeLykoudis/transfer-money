@@ -24,6 +24,10 @@ public class DataLoader implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
+        for (int i =0 ; i< 100; i++) {
+            accountService.save(Account.builder().balance(100d).currency(CurrencyEnum.EUR).build());
+        }
+
         Account account1 = Account.builder().balance(100d).currency(CurrencyEnum.EUR).build();
         Account savedAccount1 = accountService.save(account1);
         Account account2 = Account.builder().balance(200d).currency(CurrencyEnum.EUR).build();

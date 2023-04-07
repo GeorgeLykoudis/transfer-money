@@ -4,7 +4,7 @@ import com.example.transfermoney.exceptions.AccountException;
 import com.example.transfermoney.exceptions.TransactionException;
 import com.example.transfermoney.model.Account;
 import com.example.transfermoney.model.CurrencyEnum;
-import com.example.transfermoney.model.MessageEnum;
+import com.example.transfermoney.model.TransactionEnum;
 import com.example.transfermoney.model.Transaction;
 import com.example.transfermoney.model.dtos.TransactionRequest;
 import com.example.transfermoney.model.dtos.TransactionResponse;
@@ -12,8 +12,6 @@ import com.example.transfermoney.repository.TransactionRepository;
 import com.example.transfermoney.service.AccountService;
 import com.example.transfermoney.service.TransactionService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,15 +52,15 @@ public class TransactionServiceImpl implements TransactionService {
             log.debug("Fetched and validated accounts");
             transaction = executeTransaction(source, target, transactionRequest);
             if (Objects.isNull(transaction)) {
-                return TransactionResponse.builder().message(MessageEnum.FAILED_TRANSACTION.getMessage()).build();
+                return TransactionResponse.buildErrorResponse(TransactionEnum.FAILED_TRANSACTION);
             }
         } catch (AccountException | TransactionException e) {
-            return TransactionResponse.builder().message(e.getMessage()).build();
+            TransactionEnum transactionEnum = TransactionEnum.getTransactionEnumFromName(e.getMessage());
+            return TransactionResponse.buildErrorResponse(e.getMessage(), transactionEnum);
+        } catch (Exception e) {
+            return TransactionResponse.buildErrorResponse(TransactionEnum.FAILED_TRANSACTION);
         }
-        return TransactionResponse.builder()
-                .message(MessageEnum.TRANSACTION_COMPLETED.getMessage())
-                .transactionId(transaction.getId())
-                .build();
+        return TransactionResponse.buildSuccessResponse(transaction.getId());
     }
 
     private Transaction executeTransaction(Account source, Account target, TransactionRequest transactionRequest) {
@@ -90,47 +88,42 @@ public class TransactionServiceImpl implements TransactionService {
 
     private void isValidAccount(Account account) {
         if (Objects.isNull(account)) {
-            log.error(MessageEnum.ACCOUNT_NOT_FOUND.getMessage());
-            throw new TransactionException(MessageEnum.ACCOUNT_NOT_FOUND.getMessage());
+            log.error(TransactionEnum.ACCOUNT_NOT_FOUND.getMessage());
+            throw new AccountException(TransactionEnum.ACCOUNT_NOT_FOUND.getMessage(),
+                    TransactionEnum.ACCOUNT_NOT_FOUND.getCode());
         }
     }
 
     private void validateSourceNotSameWithTarget(Account source, Account target) {
         if (source.equals(target)) {
-            log.error(MessageEnum.SOURCE_EQUAL_TO_TARGET_ACCOUNT.getMessage());
-            throw new TransactionException(MessageEnum.SOURCE_EQUAL_TO_TARGET_ACCOUNT.getMessage());
+            log.error(TransactionEnum.SOURCE_EQUAL_TO_TARGET_ACCOUNT.getMessage());
+            throw new TransactionException(TransactionEnum.SOURCE_EQUAL_TO_TARGET_ACCOUNT.getMessage(),
+                    TransactionEnum.SOURCE_EQUAL_TO_TARGET_ACCOUNT.getCode());
         }
     }
 
     private void validateCurrency(Account account, TransactionRequest request) throws TransactionException {
         if (!request.hasValidCurrency()) {
-            log.error(MessageEnum.CURRENCY_NOT_SPECIFIED.getMessage());
-            throw new TransactionException(MessageEnum.CURRENCY_NOT_SPECIFIED.getMessage());
+            log.error(TransactionEnum.CURRENCY_NOT_SPECIFIED.getMessage());
+            throw new TransactionException(TransactionEnum.CURRENCY_NOT_SPECIFIED.getMessage(),
+                    TransactionEnum.CURRENCY_NOT_SPECIFIED.getCode());
         }
         // transaction in different currency
         if (!account.getCurrency().getName().equals(request.getCurrency())) {
-            log.error(MessageEnum.DIFFERENT_CURRENCY_FROM_ACCOUNT.getMessage());
+            log.error(TransactionEnum.DIFFERENT_CURRENCY_FROM_ACCOUNT.getMessage());
             // could calculate the balance with transaction's currency and proceed with the flow
-            throw new TransactionException(MessageEnum.DIFFERENT_CURRENCY_FROM_ACCOUNT.getMessage());
+            throw new TransactionException(TransactionEnum.DIFFERENT_CURRENCY_FROM_ACCOUNT.getMessage(),
+                    TransactionEnum.DIFFERENT_CURRENCY_FROM_ACCOUNT.getCode());
         }
     }
 
     private void validateSourcesAccountBalanceSufficient(Account source,
                                                          TransactionRequest request) throws TransactionException {
         if (!source.hasSufficientBalance(request.getAmount())) {
-            String message = MessageEnum
-                    .replacePlaceHolder(MessageEnum.NOT_SUFFICIENT_BALANCE, String.valueOf(source.getId()));
+            String message = TransactionEnum
+                    .replacePlaceHolder(TransactionEnum.NOT_SUFFICIENT_BALANCE, String.valueOf(source.getId()));
             log.error(message);
-            throw new TransactionException(message);
+            throw new TransactionException(message, TransactionEnum.NOT_SUFFICIENT_BALANCE.getCode());
         }
     }
-
-//    private ResponseEntity<TransactionResponse> createSuccessTransactionResponse() {
-//        return ResponseEntity.ok().build();
-//    }
-//
-//    private ResponseEntity<TransactionResponse> createTransactionResponseWithError(Exception e) {
-//        TransactionResponse transactionResponse = new TransactionResponse(e.getMessage());
-//        return new ResponseEntity<>(transactionResponse, HttpStatus.BAD_REQUEST);
-//    }
 }
