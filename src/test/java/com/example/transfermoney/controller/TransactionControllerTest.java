@@ -2,7 +2,7 @@ package com.example.transfermoney.controller;
 
 import com.example.transfermoney.model.Account;
 import com.example.transfermoney.model.CurrencyEnum;
-import com.example.transfermoney.model.MessageEnum;
+import com.example.transfermoney.model.TransactionEnum;
 import com.example.transfermoney.model.dtos.TransactionRequest;
 import com.example.transfermoney.model.dtos.TransactionResponse;
 import com.example.transfermoney.service.impl.TransactionServiceImpl;
@@ -78,10 +78,11 @@ class TransactionControllerTest {
 
     @Test
     void TransactionController_ExecuteSuccessfulTransaction_ReturnsOkResponseEntity() throws Exception {
-        String message = MessageEnum.TRANSACTION_COMPLETED.getMessage();
+        String message = TransactionEnum.TRANSACTION_COMPLETED.getMessage();
         TransactionResponse response = TransactionResponse.builder()
                 .transactionId(TRANSACTION_ID)
                 .message(message)
+                .code(TransactionEnum.TRANSACTION_COMPLETED.getCode())
                 .build();
         when(transactionService.execute(any())).thenReturn(response);
         TransactionResponse serviceResponse = transactionService.execute(new TransactionRequest());
@@ -91,15 +92,17 @@ class TransactionControllerTest {
                         .content(objectMapper.writeValueAsString(successfulTransactionRequest)))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.message", CoreMatchers.is(message)))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.code", CoreMatchers.is(TransactionEnum.TRANSACTION_COMPLETED.getCode())))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.transactionId", CoreMatchers.is(TRANSACTION_ID.intValue())));
     }
 
     @Test
     void TransactionController_ExecuteTransactionWithInsufficientBalance_ReturnsBadRequestResponseEntity() throws Exception {
         String json = objectMapper.writeValueAsString(insufficientBalanceTransactionRequest);
-        String message = MessageEnum.NOT_SUFFICIENT_BALANCE.getMessage();
+        String message = TransactionEnum.NOT_SUFFICIENT_BALANCE.getMessage();
         TransactionResponse response = TransactionResponse.builder()
                 .message(message)
+                .code(TransactionEnum.NOT_SUFFICIENT_BALANCE.getCode())
                 .build();
 
         when(transactionService.execute(any())).thenReturn(response);
@@ -110,15 +113,17 @@ class TransactionControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message", CoreMatchers.is(message)));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message", CoreMatchers.is(message)))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.code", CoreMatchers.is(TransactionEnum.NOT_SUFFICIENT_BALANCE.getCode())));
     }
 
     @Test
     void TransactionController_ExecuteTransactionWithSameAccount_ReturnsBadRequestResponseEntity() throws Exception {
         String json = objectMapper.writeValueAsString(sameAccountTransactionRequest);
-        String message = MessageEnum.NOT_SUFFICIENT_BALANCE.getMessage();
+        String message = TransactionEnum.SOURCE_EQUAL_TO_TARGET_ACCOUNT.getMessage();
         TransactionResponse response = TransactionResponse.builder()
                 .message(message)
+                .code(TransactionEnum.SOURCE_EQUAL_TO_TARGET_ACCOUNT.getCode())
                 .build();
 
         when(transactionService.execute(any())).thenReturn(response);
@@ -128,15 +133,17 @@ class TransactionControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message", CoreMatchers.is(message)));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message", CoreMatchers.is(message)))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.code", CoreMatchers.is(TransactionEnum.SOURCE_EQUAL_TO_TARGET_ACCOUNT.getCode())));
     }
 
     @Test
     void TransactionController_ExecuteTransactionWithNonExistingAccount_ReturnsBadRequestResponseEntity() throws Exception {
         String json = objectMapper.writeValueAsString(accountDoNotExistsTransactionRequest);
-        String message = MessageEnum.NOT_SUFFICIENT_BALANCE.getMessage();
+        String message = TransactionEnum.ACCOUNT_NOT_FOUND.getMessage();
         TransactionResponse response = TransactionResponse.builder()
                 .message(message)
+                .code(TransactionEnum.ACCOUNT_NOT_FOUND.getCode())
                 .build();
 
         when(transactionService.execute(any())).thenReturn(response);
@@ -146,6 +153,7 @@ class TransactionControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message", CoreMatchers.is(message)));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message", CoreMatchers.is(message)))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.code", CoreMatchers.is(TransactionEnum.ACCOUNT_NOT_FOUND.getCode())));
     }
 }
